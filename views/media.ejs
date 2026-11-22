@@ -1,0 +1,10 @@
+<%-include('head')%>
+<h1><%=x('Medya, Video & Basın Kiti','Media, Video & Press Kit')%></h1>
+<div class="grid"><%for(const i of g){const id=yt(i.url);%><div class="card"><%if(id){%><iframe class="vid" src="https://www.youtube-nocookie.com/embed/<%=id%>" allowfullscreen loading="lazy"></iframe><%}else if(/\.mp4$/i.test(i.url)){%><video class="vid" controls src="<%=i.url%>"></video><%}else{%><img src="<%=i.url%>" alt="<%=f(i,'caption')%>" loading="lazy"><%}%><p><%=f(i,'caption')%></p></div><%}%></div>
+<%if(!g.length){%><p class="muted"><%=x('Galeri yakında güncellenecek.','Gallery coming soon.')%></p><%}%>
+<h2><%=x('Basın Kiti','Press Kit')%></h2>
+<div class="card"><p><%=x('Şeffaf takım logosu, kurumsal renkler ve kısa tanıtım metni.','Transparent team logo, brand colors and a short introduction.')%></p>
+<p><b>#050505</b> · <b style="color:#00a8ff">#00a8ff</b></p>
+<p><%=x('AquaTeam, Afyon Kocatepe Üniversitesi mühendislik öğrencilerinden oluşan, çift araçlı CORAL ROV mimarisini geliştiren bir su altı robotik takımıdır.','AquaTeam is an underwater robotics team of Afyon Kocatepe University engineering students developing the dual-vehicle CORAL ROV architecture.')%></p>
+<a class="btn" href="/download/presskit"><%=x('Basın Kitini İndir (ZIP)','Download Press Kit (ZIP)')%></a></div>
+<%-include('foot')%>

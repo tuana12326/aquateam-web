@@ -1,0 +1,1 @@
+<%if(sponsors.length){%><div class="strip"><%for(const s of sponsors){%><a href="<%=s.link||'#'%>" target="_blank" rel="noopener"><%if(s.logo){%><img src="<%=s.logo%>" alt="<%=s.name%>"><%}else{%><%=s.name%><%}%></a><%}%></div><%}else{%><p class="muted"><%=x('Destekçilerimiz yakında burada yer alacak.','Our supporters will be listed here soon.')%></p><%}%>

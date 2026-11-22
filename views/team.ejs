@@ -1,0 +1,21 @@
+<%-include('head')%>
+<h1><%=x('Ekibimiz','Our Team')%></h1>
+<%const D={kaptan:['Kaptan','Captain','Departman koordinasyonu, teknik raporlama ve kurumsal iletişim.','Department coordination, technical reporting and corporate communication.'],mekanik:['Mekanik','Mechanical','Hidrodinamik gövde, SOLIDWORKS analizi, çift O-ring sızdırmazlık, 3B / lazer imalat.','Hydrodynamic hull, SOLIDWORKS analysis, double O-ring sealing, 3D / laser manufacturing.'],yazilim:['Yazılım','Software','Jetson üzerinde YOLOv9 / OpenCV, CLAHE, Pymavlink otonomisi, PyQt5 CORAL Arayüz v2.3.','YOLOv9 / OpenCV on Jetson, CLAHE, Pymavlink autonomy, PyQt5 CORAL Interface v2.3.'],elektronik:['Donanım','Hardware','İzole güç mimarisi, Pixhawk entegrasyonu, özgün PCB, ESC ve Ethernet veri altyapısı.','Isolated power architecture, Pixhawk integration, custom PCB, ESC and Ethernet data link.'],test:['Test','Test','Basınç ve sızdırmazlık testleri, sensör kalibrasyonu, havuz doğrulama.','Pressure and sealing tests, sensor calibration, pool validation.'],pilot:['Pilot','Pilot','Ana ve Mini ROV manuel kontrolü, dar alan manevraları.','Manual control of Main and Mini ROV, tight-space maneuvering.']};
+const gr=s=>lang=='tr'?s:s.replace('Elektrik-Elektronik Müh.','Electrical-Electronics Eng.').replace('Bilgisayar Müh.','Computer Eng.').replace('Makine Müh.','Mechanical Eng.').replace('Otonom','Autonomous Systems').replace('Öğr. Gör.','Lecturer').replace(/(\d)\. Sınıf/,'Year $1');
+const ini=n=>{const w=n.split(' ');return w[0][0]+w[w.length-1][0]};
+const card=r=>`<div class="card" data-dept="${r.dept}"><div class="who"><span class="avatar">${ini(r.name)}</span><div><h3>${r.name}</h3><span class="muted">${f(r,'role')}</span></div></div><p class="muted">${r.dept=='danisman'?'':r.dept.split(',').map(d=>D[d]?D[d][lang=='tr'?0:1]:d).join(' · ')+' · '}${gr(r.grade||'')}</p>${r.linkedin?`<a href="${r.linkedin}" target="_blank" rel="noopener">LinkedIn</a>`:''}</div>`;
+const adv=m.filter(r=>r.dept=='danisman'),act=m.filter(r=>!r.alumni&&r.dept!='danisman');%>
+<%if(adv.length){%><p class="eyebrow"><%=x('Akademik Danışman','Academic Advisor')%></p><div class="grid"><%-adv.map(card).join('')%></div><%}%>
+<h2><%=x('Departmanlar','Departments')%></h2>
+<div class="grid"><%for(const k in D){%><div class="card"><h3><%=D[k][lang=='tr'?0:1]%></h3><p><%=D[k][lang=='tr'?2:3]%></p></div><%}%></div>
+<h2><%=x('Ekip Üyeleri','Team Members')%></h2>
+<div class="chips"><button class="on" data-d=""><%=x('Tümü','All')%></button><%for(const k in D){%><button data-d="<%=k%>"><%=D[k][lang=='tr'?0:1]%></button><%}%></div>
+<div class="grid" id="mem"><%-act.map(card).join('')%></div>
+<%if(!act.length){%><p class="muted"><%=x('Ekip bilgileri yakında güncellenecek.','Team details coming soon.')%></p><%}%>
+<h2><%=x('Mezunlar (Alumni)','Alumni')%></h2>
+<%if(m.some(r=>r.alumni)){%><div class="grid"><%-m.filter(r=>r.alumni).map(card).join('')%></div><%}else{%><p class="muted"><%=x('İleriki dönemlerde mezunlarımız burada yer alacak.','Our alumni will be listed here in future seasons.')%></p><%}%>
+<h2 id="apply"><%=x('Takıma Katıl','Join the Team')%></h2>
+<div class="grid"><%for(const [a,b] of [[['1. Formu doldurun','1. Fill in the form'],['Departman ve sınıfınızı belirtin.','State your department and year.']],[['2. Değerlendirme','2. Review'],['Başvurunuz takım yönetimince incelenir.','The team leads review your application.']],[['3. Tanışma','3. Meet the team'],['Sizinle iletişime geçip atölyede tanışırız.','We contact you and meet at the workshop.']]]){%><div class="card"><h3><%=x(...a)%></h3><p><%=x(...b)%></p></div><%}%></div>
+<%-include('_form',{kind:'apply',fields:['name','email','dept','grade','message']})%>
+<script>document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.chips button').forEach(c=>c.classList.toggle('on',c==b));document.querySelectorAll('#mem [data-dept]').forEach(e=>e.hidden=!!b.dataset.d&&!e.dataset.dept.split(',').includes(b.dataset.d))})</script>
+<%-include('foot')%>

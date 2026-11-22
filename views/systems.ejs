@@ -1,0 +1,53 @@
+<%-include('head')%>
+<h1><%=x('Sistemler & Yazılım','Systems & Software')%></h1>
+<div class="rovcard"><img src="/img/rov.png" alt="CORAL Ana ROV"></div>
+<h2><%=x('Ana ROV ve Mini ROV','Main ROV vs Mini ROV')%></h2>
+<div class="tw"><table><tr><th><%=x('Parametre','Parameter')%></th><th>CORAL <%=x('Ana ROV','Main ROV')%></th><th>CORAL Mini ROV</th></tr>
+<%for(const r of [
+[['Dış Boyutlar','Dimensions'],'386 × 340 × 205 mm','200 × 160 × 115 mm'],
+[['Ağırlık','Weight'],'~8.0 kg','~2.3 kg'],
+[['İtici Motor','Thrusters'],x('6× Degz M5 (4 yatay vektörel + 2 dikey)','6× Degz M5 (4 horizontal vectored + 2 vertical)'),x('4× Degz M1 (dar alanda yüksek manevra)','4× Degz M1 (high maneuverability in tight spaces)')],
+[['Motor Değerleri','Motor Specs'],x('12–24V · 14.8V’ta maks. 9 kgf itki · 27A / 650W · 310 g','12–24V · 9 kgf max thrust at 14.8V · 27A / 650W · 310 g'),x('12–24V · 8A sürekli / 12A (10 sn) tepe · 350 kV','12–24V · 8A continuous / 12A (10 s) peak · 350 kV')],
+[['ESC','ESC'],x('6× Çift Yönlü 40A ESC','6× Bidirectional 40A ESC'),x('4× Çift Yönlü 30A ESC (+ servolar)','4× Bidirectional 30A ESC (+ servos)')],
+[['Kontrolcü','Controller'],'Nvidia Jetson Orin Nano + 3DR Pixhawk 2.4.8 (ArduSub)',x('Bağımsız 3DR Pixhawk 2.4.8 (ArduSub)','Independent 3DR Pixhawk 2.4.8 (ArduSub)')],
+[['Batarya','Battery'],'14.8V 5000 mAh 50C Li-Po · Power Module · UBEC 5V 3A',x('14.8V 2200 mAh 50C Li-Po (elektriksel olarak izole)','14.8V 2200 mAh 50C Li-Po (electrically isolated)')],
+[['Kamera & Sensörler','Camera & Sensors'],'Sony IMX322 HD · Ping1D Sonar · MS5837-30BA · '+x('Ultrasonik','Ultrasonic'),x('Dahili HD su altı kamerası · LED aydınlatma · Buzzer','Built-in HD underwater camera · LED lighting · Buzzer')],
+[['Haberleşme','Communication'],x('TI-Poe200 (48V PoE) Ethernet ↔ Su Üstü GCS','TI-Poe200 (48V PoE) Ethernet ↔ Surface GCS'),x('Ana ROV Jetson Orin Nano üzerinden Ethernet Veri Köprüsü','Ethernet Data Bridge via the Main ROV Jetson Orin Nano')],
+[['Emniyet','Safety'],x('Mekanik Acil Durdurma (Kill Switch) · +%10 sigorta · iç nem / sıcaklık','Mechanical Kill Switch · +10% fuse · internal humidity / temperature'),x('Bağımsız mekanik Kill Switch · XT-60 · yazılımsal failsafe','Independent mechanical Kill Switch · XT-60 · software failsafe')]]){%><tr><td><b><%=x(...r[0])%></b></td><td><%=r[1]%></td><td><%=r[2]%></td></tr><%}%></table></div>
+<h2><%=x('6-DOF İtki Simülasyonu','6-DOF Thruster Simulation')%></h2>
+<p class="muted"><%=x('Bir hareket komutu seçin; Ana ROV’un 6 Degz M5 iticisinin nasıl çalıştığını görün.','Pick a motion command to see how the six Degz M5 thrusters of the Main ROV work.')%></p>
+<div class="chips" id="cmds"></div>
+<div class="simgrid"><div class="card sim"><svg viewBox="0 0 300 240" aria-label="thrusters"><rect x="95" y="40" width="110" height="160" rx="14" fill="#0b0b0b" stroke="#2a3340"/><g id="arrow" opacity="0"><polygon points="150,95 135,125 165,125" fill="#00a8ff"/></g><g id="th"></g></svg></div>
+<div class="card"><p class="eyebrow" id="ax"></p><p id="ds" style="margin-bottom:14px"></p><div id="mt"></div></div></div>
+<script>
+const LANG="<%=lang%>",tr=LANG=="tr";
+const W={F:["İLERİ","FWD"],R:["GERİ","REV"],P:["PID","PID"],D:["DALIŞ","DOWN"],U:["ÇIKIŞ","UP"]};
+const N=[["M5-1 (Ön Sol)","M5-1 (Front Left)"],["M5-2 (Ön Sağ)","M5-2 (Front Right)"],["M5-3 (Arka Sol)","M5-3 (Rear Left)"],["M5-4 (Arka Sağ)","M5-4 (Rear Right)"],["M5-5 (Dikey Sol)","M5-5 (Vertical Left)"],["M5-6 (Dikey Sağ)","M5-6 (Vertical Right)"]];
+const POS=[[70,70],[230,70],[70,170],[230,170],[125,120],[175,120]];
+const M=[
+["İleri (Surge +)","Forward (Surge +)","X-EKSENİ İLERİ HAREKET","X-AXIS FORWARD MOTION","4 yatay vektörel Degz M5 itici simetrik ileri itki üretir; 2 dikey M5 itici MS5837 basınç verisiyle derinliği sabit tutar.","Four horizontal vectored Degz M5 thrusters produce symmetric forward thrust; two vertical M5 thrusters hold depth using MS5837 pressure data.",0,[[82,"F"],[82,"F"],[82,"F"],[82,"F"],[18,"P"],[18,"P"]]],
+["Geri (Surge -)","Reverse (Surge -)","X-EKSENİ GERİ HAREKET","X-AXIS REVERSE MOTION","40A çift yönlü ESC’ler yatay M5 motorları ters faza geçirerek aracın eksenini bozmadan geri çekilmesini sağlar.","40A bidirectional ESCs reverse the horizontal M5 motors, pulling the vehicle back without disturbing its axis.",180,[[-74,"R"],[-74,"R"],[-74,"R"],[-74,"R"],[16,"P"],[16,"P"]]],
+["Yanal Sağ (Sway +)","Sway Right (Sway +)","Y-EKSENİ SAĞA ÖTELEME","Y-AXIS RIGHT TRANSLATION","Çapraz vektörel itici çiftleri karşıt yönlü çalışarak gövde baş açısını koruyup sağa yanal kayma oluşturur.","Diagonal thruster pairs work in opposition, keeping heading while sliding the hull to the right.",90,[[78,"F"],[-78,"R"],[-78,"R"],[78,"F"],[18,"P"],[18,"P"]]],
+["Yanal Sol (Sway -)","Sway Left (Sway -)","Y-EKSENİ SOLA ÖTELEME","Y-AXIS LEFT TRANSLATION","Açılı yatay iticiler aracı döndürmeden boru hattı veya yönlendirme tahtası boyunca sola hizalar.","Angled horizontal thrusters slide the vehicle left along a pipeline or guide board without rotating it.",-90,[[-78,"R"],[78,"F"],[78,"F"],[-78,"R"],[18,"P"],[18,"P"]]],
+["Dönüş (Yaw +)","Turn (Yaw +)","Z-EKSENİ YÖNELİM DÖNÜŞÜ","Z-AXIS HEADING ROTATION","Sol ve sağ kanat iticileri ters moment uygulayarak merkez etrafında kontrollü dönüş manevrası gerçekleştirir.","Left and right side thrusters apply opposing torque for a controlled rotation about the center.",45,[[70,"F"],[-70,"R"],[70,"F"],[-70,"R"],[16,"P"],[16,"P"]]],
+["Dalış (Heave -)","Dive (Heave -)","Z-EKSENİ DİKEY DALIŞ","Z-AXIS VERTICAL DIVE","İki dikey Degz M5 itici senkron aşağı itki uygular; MS5837-30BA derinlik sensörü hedef derinliği kilitler.","Both vertical Degz M5 thrusters push down in sync; the MS5837-30BA depth sensor locks the target depth.",null,[[10,"P"],[10,"P"],[10,"P"],[10,"P"],[86,"D"],[86,"D"]]],
+["Çıkış (Heave +)","Ascend (Heave +)","Z-EKSENİ YÜZEYE ÇIKIŞ","Z-AXIS SURFACING","Dikey iticiler ve yüzdürücü köpük desteğiyle kontrollü yüzeye çıkış sağlanır.","Vertical thrusters and buoyant foam bring the vehicle up in a controlled manner.",null,[[8,"P"],[8,"P"],[8,"P"],[8,"P"],[-80,"U"],[-80,"U"]]],
+["Sabitleme (Hover)","Hover","PID DENGELİ ASILI KALMA","PID-STABILIZED HOVER","Mini ROV boru hattına sevk edilirken Ana ROV Pixhawk PID döngüsü ile akıntıya karşı konum ve derinlik sabitler.","While the Mini ROV is sent to the pipeline, the Main ROV’s Pixhawk PID loop holds position and depth against current.",null,[[12,"P"],[12,"P"],[12,"P"],[12,"P"],[24,"P"],[24,"P"]]]];
+const L=i=>tr?i:i+1;
+function show(i){const m=M[i];
+ document.querySelectorAll("#cmds button").forEach((b,j)=>b.classList.toggle("on",j==i));
+ document.getElementById("ax").textContent=m[tr?2:3];document.getElementById("ds").textContent=m[tr?4:5];
+ const a=document.getElementById("arrow");a.setAttribute("opacity",m[6]===null?0:1);if(m[6]!==null)a.setAttribute("transform","rotate("+m[6]+" 150 120)");
+ document.getElementById("th").innerHTML=m[7].map((t,k)=>{const c=t[1]=="F"||t[1]=="D"?"#00a8ff":t[1]=="R"||t[1]=="U"?"#ffffff":"#525866";return '<circle cx="'+POS[k][0]+'" cy="'+POS[k][1]+'" r="'+(k<4?24:16)+'" fill="'+c+'" fill-opacity=".16" stroke="'+c+'" stroke-width="'+(Math.abs(t[0])>50?2.5:1.5)+'"/><text x="'+POS[k][0]+'" y="'+(POS[k][1]+4)+'" fill="#e6e9ee" font-size="11" text-anchor="middle">'+(k+1)+'</text>'}).join("");
+ document.getElementById("mt").innerHTML=m[7].map((t,k)=>'<div class="tm"><div class="r"><span>'+N[k][tr?0:1]+'</span><span>'+(t[0]>0?"+":"")+t[0]+'% ('+W[t[1]][tr?0:1]+')</span></div><div class="bar"><i class="'+(t[0]<0?"r":t[1]=="P"?"p":"")+'" style="width:'+Math.abs(t[0])+'%"></i></div></div>').join("")}
+document.getElementById("cmds").innerHTML=M.map((m,i)=>'<button>'+m[tr?0:1]+'</button>').join("");
+document.querySelectorAll("#cmds button").forEach((b,i)=>b.onclick=()=>show(i));show(0);
+</script>
+<h2><%=x('Ana ROV Alt Sistemleri','Main ROV Subsystems')%></h2>
+<div class="grid"><%for(const [i,a,b,c] of [['01','Optik & Kamera','Optics & Camera','Sony IMX322 HD · CLAHE & Gauss · YOLOv9 + OpenCV · Çift su altı LED|Dual underwater LED'],['02','Jetson Orin Nano & Veri Köprüsü','Jetson Orin Nano & Data Bridge','Jetson Orin Nano · TI-Poe200 Ethernet + UART · Pymavlink / MAVLink · Ana ROV ↔ Mini ROV|Main ROV ↔ Mini ROV'],['03','İtki Sistemi','Propulsion','6× Degz M5 (310 g) · 9 kgf / 27A – 650W (4S) · 6× 40A ESC · Mini ROV: 4× Degz M1 (350 kV)'],['04','Gövde & Sızdırmazlık','Hull & Sealing','386 × 340 × 205 mm · Lenta Marine Ø110 × 325 mm · ~8.0 kg · Çift O-Ring + M10 penetratör|Double O-ring + M10 penetrator'],['05','Pixhawk & Sensörler','Pixhawk & Sensors','3DR Pixhawk 2.4.8 (ArduSub) · Ping1D Sonar + Ultrasonik|Ping1D Sonar + Ultrasonic · MS5837-30BA · İç sıcaklık & nem|Internal temperature & humidity'],['06','Güç & Güvenlik','Power & Safety','14.8V 5000 mAh 50C Li-Po · Mini ROV: 14.8V 2200 mAh (izole)|Mini ROV: 14.8V 2200 mAh (isolated) · UBEC 5V 3A · Kill Switch + Sigorta|Kill Switch + Fuse']]){%><div class="card"><span class="num"><%=i%></span><h3><%=x(a,b)%></h3><ul class="specs"><%for(const t of c.split(' · ')){%><li><%=t.split('|')[lang=='tr'?0:1]||t%></li><%}%></ul></div><%}%></div>
+<h2><%=x('3D CAD Görüntüleyici','3D CAD Viewer')%></h2>
+<%if(has('model.glb')){%><script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script><model-viewer src="/uploads/model.glb" poster="/img/rov.png" camera-controls auto-rotate shadow-intensity="1" style="width:100%;height:420px;background:#0b0b0b;border:1px solid var(--bd);border-radius:6px" alt="CORAL Ana ROV 3D modeli"></model-viewer><%}else{%><div class="model-stage"><img src="/img/rov.png" alt="CORAL Ana ROV görseli"><div><span class="eyebrow"><%=x('CORAL ANA ROV','CORAL MAIN ROV')%></span><p><%=x('3D model dosyası eklendiğinde döndürülebilir görüntüleyici burada açılır. Şimdilik ROV görselini inceleyebilir ve pilotaj simülasyonunu deneyebilirsin.','The interactive viewer will appear here when a 3D model is uploaded. For now, view the ROV image and try the pilot simulator.')%></p><a class="btn" href="/game"><%=x('Pilotaj simülasyonunu başlat','Launch pilot simulator')%></a></div></div><%}%>
+<h2><%=x('Yazılım','Software')%></h2>
+<p><%=x('PyQt5 tabanlı CORAL Arayüz v2.3 + QGroundControl entegrasyonu; CLAHE + YOLOv9 ile görüntü işleme.','PyQt5-based CORAL Interface v2.3 with QGroundControl integration; CLAHE + YOLOv9 image processing.')%></p>
+<%if(has('coral.png')){%><img src="/uploads/coral.png" alt="CORAL Arayüz v2.3"><%}else{%><div class="soon"><%=x('CORAL Arayüz ekran görüntüsü yakında eklenecek.','CORAL Interface screenshot coming soon.')%></div><%}%>
+<%-include('foot')%>

@@ -1,0 +1,4 @@
+<!doctype html><html lang="<%=lang%>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%=title%> · AquaTeam</title><link rel="icon" href="/img/favicon-32x32.png"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png"><link rel="stylesheet" href="/style.css"></head><body>
+<header><a class="brand" href="/"><img src="<%=has('logo.png')?'/uploads/logo.png':'/img/logo.png'%>" alt="AquaTeam">AquaTeam</a>
+<input type="checkbox" id="m"><label for="m" class="burger">☰</label>
+<nav><%for(const [h,a,b] of [['/systems','Sistemler','Systems'],['/game','Pilotaj','Pilot Simulator'],['/media','Medya','Media'],['/blog','Duyurular','News'],['/tests','Test Günlüğü','Test Log'],['/sponsor','Sponsorluk','Sponsorship'],['/team','Ekibimiz','Team'],['/contact','İletişim','Contact']]){%><a href="<%=h%>"><%=x(a,b)%></a><%}%><a class="lang" href="/lang/<%=lang=='tr'?'en':'tr'%>"><%=lang=='tr'?'EN':'TR'%></a></nav></header><main>

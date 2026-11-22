@@ -1,0 +1,6 @@
+<form method="post" action="/form/<%=kind%>" id="f" class="card">
+<%if(q.ok){%><p class="ok"><%=x('Mesajınız takımımıza iletildi.','Your message has been sent.')%></p><%}if(q.err){%><p class="err"><%=x('Lütfen alanları kontrol edin (geçerli e-posta ve en az 5 karakterlik mesaj).','Please check the fields (valid email, message of 5+ characters).')%></p><%}%>
+<input name="website" class="hp" tabindex="-1" autocomplete="off">
+<%const L={name:['Ad Soyad','Full name'],email:['E-posta','Email'],company:['Kurum','Company'],dept:['İlgilendiğiniz departman','Preferred department'],grade:['Sınıf','Year'],message:['Mesaj','Message']};
+for(const n of fields){%><label><%=x(...L[n])%><%if(n=='message'){%><textarea name="<%=n%>" required minlength="5" maxlength="2000"></textarea><%}else{%><input name="<%=n%>" type="<%=n=='email'?'email':'text'%>" required maxlength="200"><%}%></label><%}%>
+<button><%=x('Gönder','Send')%></button></form>

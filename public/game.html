@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORAL ROV Pilotaj Simülasyonu | AquaTeam</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Montserrat:wght@500;600;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #00a8ff;
+      --bg: #050505;
+      --surface: #101114;
+      --border: #252830;
+      --text: #f5f7fa;
+      --muted: #9ba3b0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Montserrat', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #game-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 460px;
+      max-height: 780px;
+      background-color: #070b10;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud-bar {
+      position: absolute;
+      top: 0;
+      inset-inline: 0;
+      z-index: 6;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(5, 5, 5, 0.9), rgba(5, 5, 5, 0));
+      pointer-events: none;
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .hud-pill {
+      padding: 5px 10px;
+      border-radius: 4px;
+      background-color: rgba(16, 17, 20, 0.9);
+      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hud-pill--depth { color: var(--accent); }
+    .hud-pill--best { color: var(--muted); font-size: 11px; }
+
+    .hull-pips {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .hull-pip {
+      width: 11px;
+      height: 7px;
+      border-radius: 2px;
+      background-color: #262930;
+    }
+
+    .hull-pip.is-active {
+      background-color: var(--accent);
+    }
+
+    .hud-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background-color: rgba(16, 17, 20, 0.92);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .hud-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      background-color: rgba(5, 5, 5, 0.94);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px 20px;
+      gap: 14px;
+    }
+
+    #overlay.is-hidden {
+      display: none;
+    }
+
+    .kicker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    #overlay h1 {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(26px, 6vw, 34px);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    #overlay p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 34ch;
+    }
+
+    .mode-selector {
+      width: 100%;
+      max-width: 340px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-block: 4px;
+    }
+
+    .mode-btn {
+      padding: 10px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background-color: var(--surface);
+      color: var(--muted);
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .mode-btn span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .mode-btn[aria-pressed="true"] {
+      border-color: var(--accent);
+      background-color: rgba(0, 168, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .legend-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .primary-btn {
+      padding: 12px 34px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      background-color: var(--accent);
+      color: #050505;
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .primary-btn:hover {
+      background-color: #ffffff;
+      border-color: #ffffff;
+    }
+
+    .back-link {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 4px;
+    }
+
+    #status-toast {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 7;
+      padding: 5px 12px;
+      border-radius: 4px;
+      background-color: rgba(16, 17, 20, 0.94);
+      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      white-space: nowrap;
+    }
+
+    #status-toast.is-shown {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-shell">
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-pill hud-pill--depth" id="depthReadout">0m</div>
+        <div class="hud-pill" aria-label="Gövde bütünlüğü">
+          <div class="hull-pips" id="hullPips"></div>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-pill hud-pill--best" id="bestReadout">REKOR: 0m</div>
+        <button type="button" class="hud-btn" id="soundToggleBtn" title="Ses" aria-label="Ses efektlerini aç veya kapat">🔊</button>
+        <button type="button" class="hud-btn" id="pauseBtn" title="Duraklat" aria-label="Oyunu duraklat">⏸</button>
+      </div>
+    </div>
+
+    <div id="status-toast">CORAL ROV Hazır</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="overlay">
+      <span class="kicker">AQUATEAM • CORAL ROV PİLOTAJ TESTİ</span>
+      <h1 id="overlayTitle">KONTROL <span style="color: var(--accent);">SENDE</span></h1>
+      <p id="overlayDesc">
+        6× Degz M5 iticili CORAL ROV ile engellerden kaçın, veri kapsüllerini toplayın ve hedef derinliğe ulaşın.
+      </p>
+
+      <div class="mode-selector" id="modeSelector" role="group" aria-label="Görev modu seçimi">
+        <button type="button" class="mode-btn" data-mode="recon" aria-pressed="true">
+          KEŞİF
+          <span>100m • 3 Can</span>
+        </button>
+        <button type="button" class="mode-btn" data-mode="teknofest" aria-pressed="false">
+          TEKNOFEST
+          <span>250m • 2 Can</span>
+        </button>
+        <button type="button" class="mode-btn" data-mode="endless" aria-pressed="false">
+          SONSUZ
+          <span>∞ • Rekor</span>
+        </button>
+      </div>
+
+      <div class="legend-row">
+        <span>←/→ veya A/D</span>
+        <span>•</span>
+        <span>Dokun / Kaydır</span>
+        <span>•</span>
+        <span>Space: Duraklat</span>
+      </div>
+
+      <button type="button" class="primary-btn" id="startBtn">DALIŞA BAŞLA</button>
+      <a href="/" class="back-link" id="standaloneBackLink" style="display: none;">← AquaTeam Ana Sayfasına Dön</a>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const shell = document.getElementById('game-shell');
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const overlay = document.getElementById('overlay');
+      const overlayTitle = document.getElementById('overlayTitle');
+      const overlayDesc = document.getElementById('overlayDesc');
+      const startBtn = document.getElementById('startBtn');
+      const depthReadout = document.getElementById('depthReadout');
+      const bestReadout = document.getElementById('bestReadout');
+      const hullPips = document.getElementById('hullPips');
+      const soundToggleBtn = document.getElementById('soundToggleBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const statusToast = document.getElementById('status-toast');
+      const backLink = document.getElementById('standaloneBackLink');
+      const modeBtns = document.querySelectorAll('[data-mode]');
+
+      if (window.self === window.top && backLink) {
+        backLink.style.display = 'inline-block';
+      }
+
+      const MODES = {
+        recon: { label: 'KEŞİF', target: 100, maxHull: 3, startSpeed: 290, accel: 0.065 },
+        teknofest: { label: 'TEKNOFEST', target: 250, maxHull: 2, startSpeed: 345, accel: 0.085 },
+        endless: { label: 'SONSUZ', target: Infinity, maxHull: 3, startSpeed: 315, accel: 0.075 },
+      };
+
+      const BEST_KEY = 'aquateam_coral_rov_best_depth_v2';
+      let selectedMode = 'recon';
+      let bestDepth = Number(localStorage.getItem(BEST_KEY) || 0);
+      bestReadout.textContent = `REKOR: ${bestDepth}m`;
+
+      let soundOn = true;
+      let audioCtx = null;
+      const playTone = (freq, duration = 0.08, type = 'sine', gainVal = 0.045) => {
+        if (!soundOn) return;
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch {
+          // Ignore blocked audio
+        }
+      };
+
+      const showToast = (msg) => {
+        statusToast.textContent = msg;
+        statusToast.classList.add('is-shown');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => statusToast.classList.remove('is-shown'), 1600);
+      };
+
+      const rovImg = new Image();
+      let rovLoaded = false;
+      rovImg.onload = () => { rovLoaded = true; };
+      rovImg.src = '/img/rov.png';
+
+      let W = 0, H = 0, laneW = 0, lanes = [0, 0, 0];
+      let running = false;
+      let paused = false;
+      let rafId = null;
+      let lastTs = 0;
+      let spawnTimer = 0;
+      let pickupTimer = 0;
+      let depth = 0;
+      let hull = 3;
+      let maxHull = 3;
+      let speedMult = 1;
+      let baseSpeed = 300;
+      let invulnTimer = 0;
+      let hitFlash = 0;
+      let frame = 0;
+
+      const bubbles = [];
+      let obstacles = [];
+      let pickups = [];
+
+      const player = {
+        lane: 1,
+        x: 0,
+        targetX: 0,
+        y: 0,
+        h: 108,
+        tilt: 0,
+      };
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = shell.clientWidth;
+        H = shell.clientHeight;
+        canvas.width = Math.floor(W * dpr);
+        canvas.height = Math.floor(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        laneW = W / 3;
+        lanes = [laneW * 0.5, W * 0.5, W - laneW * 0.5];
+        player.y = H - 146;
+        player.targetX = lanes[player.lane];
+        if (!running) player.x = player.targetX;
+      }
+
+      function renderHullPips() {
+        hullPips.innerHTML = '';
+        for (let i = 0; i < maxHull; i++) {
+          const pip = document.createElement('span');
+          pip.className = 'hull-pip' + (i < hull ? ' is-active' : '');
+          hullPips.appendChild(pip);
+        }
+      }
+
+      function spawnBubble(x, y) {
+        bubbles.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y,
+          r: Math.random() * 2.5 + 1.2,
+          vy: Math.random() * 130 + 85,
+          a: 0.55,
+        });
+      }
+
+      function spawnWave() {
+        const types = ['mine', 'rock', 'barrel', 'anchor'];
+        const lane1 = Math.floor(Math.random() * 3);
+        obstacles.push({
+          lane: lane1,
+          x: lanes[lane1],
+          y: -85,
+          w: 64,
+          h: 64,
+          type: types[Math.floor(Math.random() * types.length)],
+        });
+
+        const doubleChance = Math.min(0.46, 0.24 + (speedMult - 1) * 0.12);
+        if (Math.random() < doubleChance) {
+          let lane2;
+          do { lane2 = Math.floor(Math.random() * 3); } while (lane2 === lane1);
+          obstacles.push({
+            lane: lane2,
+            x: lanes[lane2],
+            y: -85,
+            w: 64,
+            h: 64,
+            type: types[Math.floor(Math.random() * types.length)],
+          });
+        }
+      }
+
+      function spawnPickup() {
+        const lane = Math.floor(Math.random() * 3);
+        const kind = hull < maxHull && Math.random() < 0.35 ? 'shield' : 'data';
+        pickups.push({ lane, x: lanes[lane], y: -60, r: 17, kind });
+      }
+
+      function drawBackground() {
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#071728');
+        grad.addColorStop(1, '#040609');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.setLineDash([6, 12]);
+        ctx.lineDashOffset = -(frame * 3.2);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(laneW, 0); ctx.lineTo(laneW, H);
+        ctx.moveTo(laneW * 2, 0); ctx.lineTo(laneW * 2, H);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawObstacle(o) {
+        ctx.save();
+        const cx = o.x;
+        const cy = o.y + 32;
+
+        if (o.type === 'mine') {
+          ctx.fillStyle = '#991b1b';
+          ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#7f1d1d';
+          ctx.fillRect(cx - 30, cy - 3.5, 60, 7);
+          ctx.fillRect(cx - 3.5, cy - 30, 7, 60);
+          ctx.fillStyle = (frame % 26 < 13) ? '#ef4444' : '#450a0a';
+          ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
+        } else if (o.type === 'rock') {
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.moveTo(cx + 8, o.y + 4); ctx.lineTo(cx + 32, o.y + 18);
+          ctx.lineTo(cx + 34, o.y + 50); ctx.lineTo(cx + 12, o.y + 62);
+          ctx.lineTo(cx - 22, o.y + 58); ctx.lineTo(cx - 32, o.y + 32);
+          ctx.lineTo(cx - 16, o.y + 10); ctx.closePath(); ctx.fill();
+        } else if (o.type === 'barrel') {
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath(); ctx.roundRect(cx - 22, o.y + 6, 44, 54, 6); ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(cx - 22, o.y + 20, 44, 5);
+          ctx.fillRect(cx - 22, o.y + 42, 44, 5);
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.translate(cx, cy);
+          ctx.strokeStyle = '#64748b'; ctx.fillStyle = '#64748b';
+          ctx.lineWidth = 4.5;
+          ctx.beginPath(); ctx.arc(0, -21, 5.5, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillRect(-18, -12, 36, 4.5);
+          ctx.fillRect(-3, -12, 6, 38);
+          ctx.lineWidth = 6.5;
+          ctx.beginPath(); ctx.arc(0, 12, 19, 0, Math.PI, false); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-19, 12); ctx.lineTo(-28, -2); ctx.lineTo(-11, 5); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(19, 12); ctx.lineTo(28, -2); ctx.lineTo(11, 5); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawPickup(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        const col = p.kind === 'shield' ? '#22c55e' : '#00a8ff';
+        ctx.fillStyle = p.kind === 'shield' ? 'rgba(34,197,94,0.18)' : 'rgba(0,168,255,0.18)';
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px JetBrains Mono';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.kind === 'shield' ? '+HP' : '+5m', 0, 1);
+        ctx.restore();
+      }
+
+      function drawPlayer() {
+        ctx.save();
+        ctx.translate(player.x, player.y + player.h / 2);
+        ctx.rotate(player.tilt);
+
+        if (invulnTimer > 0 && Math.floor(invulnTimer * 14) % 2 === 0) {
+          ctx.globalAlpha = 0.45;
+        }
+
+        if (rovLoaded) {
+          const aspect = (rovImg.naturalWidth && rovImg.naturalHeight)
+            ? rovImg.naturalWidth / rovImg.naturalHeight
+            : 1.77;
+          const drawH = player.h;
+          const drawW = drawH * aspect;
+          ctx.rotate(Math.PI);
+          ctx.drawImage(rovImg, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else {
+          ctx.fillStyle = '#111827';
+          ctx.strokeStyle = '#00a8ff';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(-26, -42, 52, 84, 12); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function checkRectHit(o) {
+        const px = player.x - 28, py = player.y + 18, pw = 56, ph = 70;
+        const ox = o.x - o.w / 2 + 8, oy = o.y + 8, ow = o.w - 16, oh = o.h - 16;
+        return px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
+      }
+
+      function checkCircleHit(p) {
+        const dx = player.x - p.x;
+        const dy = (player.y + player.h * 0.5) - p.y;
+        return Math.hypot(dx, dy) < p.r + 32;
+      }
+
+      function updateBest() {
+        const rounded = Math.floor(depth);
+        if (rounded > bestDepth) {
+          bestDepth = rounded;
+          localStorage.setItem(BEST_KEY, String(bestDepth));
+          bestReadout.textContent = `REKOR: ${bestDepth}m`;
+        }
+      }
+
+      function endMission(won) {
+        running = false;
+        cancelAnimationFrame(rafId);
+        updateBest();
+        const finalDepth = Math.floor(depth);
+        overlay.classList.remove('is-hidden');
+        if (won) {
+          playTone(660, 0.14, 'triangle', 0.06);
+          setTimeout(() => playTone(880, 0.2, 'triangle', 0.06), 130);
+          overlayTitle.innerHTML = 'GÖREV <span style="color: var(--accent);">TAMAMLANDI</span>';
+          overlayDesc.innerHTML = `Hedef derinliğe ulaşıldı.<br><strong style="color:#fff;font-size:17px;">${finalDepth}m Derinlik</strong> • Mod: ${MODES[selectedMode].label}`;
+          startBtn.textContent = 'YENİ GÖREV';
+        } else {
+          playTone(135, 0.24, 'sawtooth', 0.06);
+          overlayTitle.innerHTML = '<span style="color: #ef4444;">SİNYAL KOPTU</span>';
+          overlayDesc.innerHTML = `Pilotaj testi sonucu:<br><strong style="color:#fff;font-size:17px;">${finalDepth}m Derinlik</strong> • Rekor: ${bestDepth}m`;
+          startBtn.textContent = 'YENİDEN DENE';
+        }
+      }
+
+      function tick(ts) {
+        if (!running) return;
+        if (!lastTs) lastTs = ts;
+        const dt = Math.min(0.05, (ts - lastTs) / 1000);
+        lastTs = ts;
+
+        if (!paused) {
+          frame++;
+          if (invulnTimer > 0) invulnTimer -= dt;
+          if (hitFlash > 0) hitFlash -= dt * 3;
+
+          const prevX = player.x;
+          player.x += (player.targetX - player.x) * Math.min(1, dt * 15);
+          player.tilt = Math.max(-0.22, Math.min(0.22, (player.x - prevX) * 0.025));
+
+          if (frame % 5 === 0) {
+            spawnBubble(player.x - 22, player.y + player.h - 14);
+            spawnBubble(player.x + 22, player.y + player.h - 14);
+          }
+
+          depth += dt * 4.5 * speedMult;
+          const modeCfg = MODES[selectedMode];
+          speedMult = 1 + Math.floor(depth / 12) * modeCfg.accel;
+
+          const targetStr = Number.isFinite(modeCfg.target) ? ` / ${modeCfg.target}m` : '';
+          depthReadout.textContent = `${Math.floor(depth)}m${targetStr}`;
+
+          if (depth >= modeCfg.target) {
+            endMission(true);
+            return;
+          }
+
+          spawnTimer -= dt;
+          if (spawnTimer <= 0) {
+            spawnWave();
+            spawnTimer = Math.max(0.52, 1.32 - (speedMult - 1) * 0.34);
+          }
+
+          pickupTimer -= dt;
+          if (pickupTimer <= 0) {
+            spawnPickup();
+            pickupTimer = 3.2 + Math.random() * 2.4;
+          }
+
+          for (let i = bubbles.length - 1; i >= 0; i--) {
+            const b = bubbles[i];
+            b.y += b.vy * dt;
+            b.a -= dt * 1.1;
+            if (b.a <= 0 || b.y > H) bubbles.splice(i, 1);
+          }
+
+          for (let i = pickups.length - 1; i >= 0; i--) {
+            const p = pickups[i];
+            p.y += baseSpeed * speedMult * 0.88 * dt;
+            if (checkCircleHit(p)) {
+              if (p.kind === 'shield' && hull < maxHull) {
+                hull++;
+                renderHullPips();
+                showToast('+1 Gövde Kalkanı');
+                playTone(580, 0.12, 'triangle', 0.05);
+              } else {
+                depth += 5;
+                showToast('+5m Veri Kapsülü');
+                playTone(740, 0.09, 'sine', 0.05);
+              }
+              pickups.splice(i, 1);
+              continue;
+            }
+            if (p.y > H + 40) pickups.splice(i, 1);
+          }
+
+          for (let i = obstacles.length - 1; i >= 0; i--) {
+            const o = obstacles[i];
+            o.y += baseSpeed * speedMult * dt;
+            if (invulnTimer <= 0 && checkRectHit(o)) {
+              hull--;
+              renderHullPips();
+              hitFlash = 1;
+              invulnTimer = 1.15;
+              obstacles.splice(i, 1);
+              playTone(165, 0.16, 'sawtooth', 0.06);
+              if (hull <= 0) {
+                endMission(false);
+                return;
+              }
+              showToast(`Çarpışma — Kalan Can: ${hull}`);
+              continue;
+            }
+            if (o.y > H + 80) obstacles.splice(i, 1);
+          }
+        }
+
+        drawBackground();
+
+        for (const b of bubbles) {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180, 225, 255, ${b.a})`;
+          ctx.fill();
+        }
+
+        for (const p of pickups) drawPickup(p);
+        for (const o of obstacles) drawObstacle(o);
+        drawPlayer();
+
+        if (hitFlash > 0) {
+          ctx.fillStyle = `rgba(239, 68, 68, ${hitFlash * 0.3})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        if (paused) {
+          ctx.fillStyle = 'rgba(5, 5, 5, 0.72)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 24px Oswald';
+          ctx.textAlign = 'center';
+          ctx.fillText('DURAKLATILDI', W / 2, H / 2);
+        }
+
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function startGame() {
+        const cfg = MODES[selectedMode];
+        running = true;
+        paused = false;
+        depth = 0;
+        maxHull = cfg.maxHull;
+        hull = cfg.maxHull;
+        baseSpeed = cfg.startSpeed;
+        speedMult = 1;
+        invulnTimer = 0;
+        hitFlash = 0;
+        spawnTimer = 0.6;
+        pickupTimer = 2.4;
+        obstacles = [];
+        pickups = [];
+        bubbles.length = 0;
+        player.lane = 1;
+        resize();
+        player.x = lanes[1];
+        player.targetX = lanes[1];
+        renderHullPips();
+        pauseBtn.textContent = '⏸';
+        overlay.classList.add('is-hidden');
+        playTone(440, 0.1, 'triangle', 0.05);
+        lastTs = performance.now();
+        rafId = requestAnimationFrame(tick);
+      }
+
+      const moveLeft = () => {
+        if (!running || paused || player.lane <= 0) return;
+        player.lane--;
+        player.targetX = lanes[player.lane];
+        playTone(320, 0.04, 'sine', 0.025);
+      };
+
+      const moveRight = () => {
+        if (!running || paused || player.lane >= 2) return;
+        player.lane++;
+        player.targetX = lanes[player.lane];
+        playTone(360, 0.04, 'sine', 0.025);
+      };
+
+      const togglePause = () => {
+        if (!running) return;
+        paused = !paused;
+        pauseBtn.textContent = paused ? '▶' : '⏸';
+        if (!paused) lastTs = performance.now();
+      };
+
+      modeBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedMode = btn.dataset.mode;
+          modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === selectedMode)));
+        });
+      });
+
+      soundToggleBtn.addEventListener('click', () => {
+        soundOn = !soundOn;
+        soundToggleBtn.textContent = soundOn ? '🔊' : '🔇';
+      });
+
+      pauseBtn.addEventListener('click', togglePause);
+      startBtn.addEventListener('click', startGame);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeft();
+        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRight();
+        else if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+          if (running) {
+            e.preventDefault();
+            togglePause();
+          }
+        }
+      });
+
+      let touchStartX = null;
+      canvas.addEventListener('touchstart', (e) => {
+        if (!running || paused) return;
+        touchStartX = e.changedTouches[0].clientX;
+        e.preventDefault();
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', (e) => {
+        if (!running || paused || touchStartX === null) return;
+        const endX = e.changedTouches[0].clientX;
+        const diff = endX - touchStartX;
+        if (Math.abs(diff) > 28) {
+          if (diff < 0) moveLeft(); else moveRight();
+        } else {
+          const rect = canvas.getBoundingClientRect();
+          if (endX - rect.left < rect.width / 2) moveLeft(); else moveRight();
+        }
+        touchStartX = null;
+      });
+
+      window.addEventListener('resize', resize);
+      resize();
+      renderHullPips();
+      drawBackground();
+    })();
+  </script>
+</body>
+</html>

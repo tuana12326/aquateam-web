@@ -1,0 +1,6 @@
+<%-include('head')%>
+<h1><%=kind=='posts'?x('Duyurular & Blog','News & Blog'):x('Test & Geliştirme Günlüğü','Test & Development Log')%></h1>
+<form class="search" method="get"><input name="s" value="<%=s%>" placeholder="<%=x('Ara…','Search…')%>" maxlength="60"><button><%=x('Ara','Search')%></button></form>
+<%if(!rows.length){%><p class="muted"><%=s?x('Sonuç bulunamadı.','No results found.'):x('Henüz kayıt yok.','No entries yet.')%></p><%}%>
+<%for(const r of rows){%><article class="card" style="margin-bottom:14px"><small class="muted"><%=r.date%></small><h3><%=f(r,'title')%></h3><p style="white-space:pre-line"><%=f(r,'body')%></p></article><%}%>
+<%-include('foot')%>

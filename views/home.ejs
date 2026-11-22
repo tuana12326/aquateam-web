@@ -1,0 +1,26 @@
+<%-include('head')%>
+<section class="hero hero-bg"><div>
+<p class="eyebrow">TEKNOFEST · Afyon Kocatepe Üniversitesi</p>
+<h1><%=x('Su altı robotiğinde çift araçlı CORAL mimarisi','Dual-vehicle CORAL architecture for underwater robotics')%></h1>
+<p class="lead"><%=x('AquaTeam; Ana ROV ve Mini ROV’dan oluşan sistemini, kendi geliştirdiği kontrol arayüzü ve görüntü işleme yazılımıyla birleştiren mühendislik öğrencilerinden oluşur.','AquaTeam is a team of engineering students combining a Main ROV and a Mini ROV with their own control interface and image-processing software.')%></p>
+<a class="btn" href="/sponsor"><%=x('Bize Destek Olun','Support Us')%></a> <a class="btn o" href="/systems"><%=x('Sistemlerimizi İnceleyin','Explore Our Systems')%></a> <a class="btn o" href="/game"><%=x('Pilotaj simülasyonunu dene','Try the pilot simulator')%></a></div>
+<aside><div class="rovcard"><img src="/img/rov.png" alt="CORAL ROV"></div><div class="panel">
+<div><b>CORAL <%=x('Ana ROV','Main ROV')%></b><span>6× Degz M5 · 40A ESC · Jetson Orin Nano · Pixhawk 2.4.8</span></div>
+<div><b>CORAL Mini ROV</b><span>4× Degz M1 · 30A ESC · Pixhawk 2.4.8 · 14.8V 2200 mAh</span></div>
+<div><b><%=x('Yazılım','Software')%></b><span>CORAL <%=x('Arayüz','Interface')%> v2.3 · QGroundControl · CLAHE + YOLOv9</span></div></div></aside></section>
+<section class="stats"><%for(const [n,a,b] of [['2','ROV','ROVs'],['10',' İtici motor','Thrusters'],['13','Ekip üyesi','Team members'],['YOLOv9','Görüntü işleme','Image processing']]){%><div class="stat"><b><%=n%></b><span><%=x(a.trim(),b)%></span></div><%}%></section>
+<h2><%=x('Keşfedin','Explore')%></h2>
+<div class="grid">
+<a class="card" href="/systems"><span class="num">01</span><h3><%=x('Sistemler & Yazılım','Systems & Software')%></h3><p><%=x('Ana ROV ve Mini ROV teknik karşılaştırması, 3D model ve CORAL Arayüz.','Main vs Mini ROV comparison, 3D model and the CORAL Interface.')%></p></a>
+<a class="card" href="/tests"><span class="num">02</span><h3><%=x('Test & Geliştirme Günlüğü','Test & Development Log')%></h3><p><%=x('Havuz testleri, sızdırmazlık ve üretim aşamalarından tarihli güncellemeler.','Dated updates from pool tests, sealing and manufacturing.')%></p></a>
+<a class="card" href="/media"><span class="num">03</span><h3><%=x('Medya & Basın Kiti','Media & Press Kit')%></h3><p><%=x('Havuz testi videoları, fotoğraf galerisi ve indirilebilir basın kiti.','Pool test videos, photo gallery and a downloadable press kit.')%></p></a></div>
+<h2><%=x('Biz Kimiz','About Us')%></h2>
+<div class="about"><img src="/img/team-work.jpg" alt="AquaTeam" loading="lazy"><div><p><%=x('AquaTeam, Afyon Kocatepe Üniversitesi mühendislik öğrencilerinden oluşan bir su altı robotik takımıdır. Mekanik, yazılım, donanım, test ve pilot ekipleriyle çift araçlı CORAL ROV mimarisini tasarlar, üretir ve test eder.','AquaTeam is an underwater robotics team of Afyon Kocatepe University engineering students. With mechanical, software, hardware, test and pilot teams, we design, build and test the dual-vehicle CORAL ROV architecture.')%></p><a class="btn o" href="/team"><%=x('Ekibimizle Tanışın','Meet the Team')%></a></div></div>
+<h2><%=x('Son Duyurular','Latest News')%></h2>
+<div class="grid"><%for(const p of posts){%><div class="card"><span class="num"><%=p.date%></span><h3><%=f(p,'title')%></h3><p><%=f(p,'body').slice(0,140)%>…</p></div><%}%></div>
+<h2><%=x('Birlikte Çalışalım','Work With Us')%></h2>
+<div class="cta2">
+<div class="card"><p class="eyebrow"><%=x('Sponsorlar & Çözüm Ortakları','Sponsors & Partners')%></p><h3><%=x('Kurumsal ve ayni destek','Corporate and in-kind support')%></h3><p><%=x('Destek paketlerimizi ve ayni destek kalemlerimizi inceleyin.','Browse our support packages and in-kind support items.')%></p><a class="btn" href="/sponsor"><%=x('Sponsorluk Sayfası','Sponsorship Page')%></a></div>
+<div class="card"><p class="eyebrow"><%=x('Yeni Üyeler','New Members')%></p><h3><%=x('Takıma katılın','Join the team')%></h3><p><%=x('Afyon Kocatepe Üniversitesi mühendislik öğrencisiyseniz 3 adımda başvurun.','If you are an AKÜ engineering student, apply in 3 steps.')%></p><a class="btn o" href="/team#apply"><%=x('Başvuru Yap','Apply')%></a></div></div>
+<h2><%=x('Destekçilerimiz','Supporters')%></h2><%-include('_strip')%>
+<%-include('foot')%>
